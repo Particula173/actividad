@@ -51,7 +51,9 @@ def test_latency_extreme_branch():
 def test_frequency_buffer_branch():
     """Ejecuta la rama frequency_buffer"""
     row = make_row(
-        user_reputation="trusted", customer_txn_30d=4, ip_risk="medium"
+        user_reputation="recurrent",  # antes era "trusted"
+        customer_txn_30d=4,
+        ip_risk="medium"
     )
     result = assess_row(row, DEFAULT_CONFIG)
     assert "frequency_buffer" in result["reasons"]
