@@ -170,9 +170,8 @@ def _make_decision(score, reasons, cfg):
     }
 
 
-def _add_reason(reasons, label, add, score):
+def _add_reason(reasons, label, add):
     """Agrega una razón al listado."""
-    score += add
     reasons.append(f"{label}(+{add})")
 
 
