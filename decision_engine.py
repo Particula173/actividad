@@ -26,30 +26,30 @@ DEFAULT_CONFIG = {
         "latency_extreme": 2,
         "new_user_high_amount": 2,
     },
-    "score_to_decision": {
-        "reject_at": 10,
-        "review_at": 4
-    }
+    "score_to_decision": {"reject_at": 10, "review_at": 4}
 }
 
-# Optional: override thresholds via environment variables (for CI/CD / canary tuning)
+# Optional: override thresholds via environment variables (for CI/CD tuning)
 try:
     import os as _os
     _rej = _os.getenv("REJECT_AT")
     _rev = _os.getenv("REVIEW_AT")
-    if _rej is not None:
+    if _rej is not None:  # pragma: no cover
         DEFAULT_CONFIG["score_to_decision"]["reject_at"] = int(_rej)
-    if _rev is not None:
+    if _rev is not None:  # pragma: no cover
         DEFAULT_CONFIG["score_to_decision"]["review_at"] = int(_rev)
-except Exception:
+except Exception:  # pragma: no cover
     pass
+
 
 def is_night(hour: int) -> bool:
     return hour >= 22 or hour <= 5
 
+
 def high_amount(amount: float, product_type: str, thresholds: Dict[str, Any]) -> bool:
     t = thresholds.get(product_type, thresholds.get("_default"))
     return amount >= t
+
 
 def assess_row(row: pd.Series, cfg: Dict[str, Any]) -> Dict[str, Any]:
     """Evalúa una transacción y devuelve la decisión de riesgo."""
@@ -85,12 +85,14 @@ def _is_hard_block(row, cfg):
         and str(row.get("ip_risk", "low")).lower() == "high"
     )
 
+
 def _reject_hard():
     return {
         "decision": DECISION_REJECTED,
         "risk_score": 100,
         "reasons": "hard_block:chargebacks>=2+ip_high",
     }
+
 
 def _categorical_risks(row, cfg, score, reasons):
     for field in ["ip_risk", "email_risk", "device_fingerprint_risk"]:
@@ -101,12 +103,14 @@ def _categorical_risks(row, cfg, score, reasons):
             reasons.append(f"{field}:{val}(+{add})")
     return score, reasons
 
+
 def _reputation(rep, cfg, score, reasons):
     add = cfg["score_weights"]["user_reputation"].get(rep, 0)
     if add:
         score += add
-        reasons.append(f"user_reputation:{rep}({('+' if add>=0 else '')}{add})")
+        reasons.append(f"user_reputation:{rep}({('+' if add >= 0 else '')}{add})")
     return score, reasons
+
 
 def _contextual_risks(row, cfg, score, reasons, rep):
     hr = int(row.get("hour", 12))
@@ -137,7 +141,9 @@ def _contextual_risks(row, cfg, score, reasons, rep):
         add = cfg["score_weights"]["latency_extreme"]
         score += add
         reasons.append(f"latency_extreme:{lat}ms(+{add})")
+
     return score, reasons
+
 
 def _frequency_buffer(row, score, reasons, rep):
     freq = int(row.get("customer_txn_30d", 0))
@@ -145,6 +151,7 @@ def _frequency_buffer(row, score, reasons, rep):
         score -= 1
         reasons.append("frequency_buffer(-1)")
     return score, reasons
+
 
 def _decision(score, reasons, cfg):
     reject_at = cfg["score_to_decision"]["reject_at"]
@@ -158,6 +165,7 @@ def _decision(score, reasons, cfg):
         decision = DECISION_ACCEPTED
 
     return {"decision": decision, "risk_score": int(score), "reasons": ";".join(reasons)}
+
 
 def run(input_csv: str, output_csv: str, config: Dict[str, Any] = None) -> pd.DataFrame:
     cfg = config or DEFAULT_CONFIG
@@ -173,6 +181,8 @@ def run(input_csv: str, output_csv: str, config: Dict[str, Any] = None) -> pd.Da
     out.to_csv(output_csv, index=False)
     return out
 
+
+# pragma: no cover
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=False, default="transactions_examples.csv", help="Path to input CSV")
@@ -181,5 +191,7 @@ def main():
     out = run(args.input, args.output)
     print(out.head().to_string(index=False))
 
+
+# pragma: no cover
 if __name__ == "__main__":
     main()
